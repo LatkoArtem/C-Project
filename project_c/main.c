@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <float.h>
 
 #define MAX_CITIES 20
 #define MAX_CITY_NAME_LENGTH 19
@@ -47,6 +48,27 @@ int check_for_int(char* text, int* variable) {
         // Перевірити, чи введене значення має непотрібні символи
         char* endptr;
         strtol(input, &endptr, 10);
+        if (*endptr != '\0' && *endptr != '\n') {
+            printf("Incorrect input\n");
+            continue;
+        }
+        break;
+    }
+    return 0;
+}
+
+int check_for_float(char* text, float* variable) {
+    char input[50];
+    while (true) {
+        printf("%s", text);
+        fgets(input, sizeof(input), stdin);
+        if (sscanf(input, "%f", variable) != 1) {
+            printf("Incorrect input\n");
+            continue;
+        }
+        // Перевірити, чи введене значення має непотрібні символи
+        char* endptr;
+        strtof(input, &endptr);
         if (*endptr != '\0' && *endptr != '\n') {
             printf("Incorrect input\n");
             continue;
@@ -116,15 +138,15 @@ void tspBruteForce(int cities_num, int graph[cities_num][cities_num], int start_
 
 // Структура для зберігання інформації про шлях
 typedef struct {
-    int time;
-    int cost;
+    float time;
+    float cost;
 } Edge;
 
 // Черга з пріоритетом для перестановок Хіпа
 typedef struct {
     int city;
-    int time;
-    int cost;
+    float time;
+    float cost;
 } PriorityQueue;
 
 PriorityQueue heap[MAX_CITIES * MAX_CITIES]; // Підтримуємо максимальний розмір черги
@@ -166,17 +188,18 @@ PriorityQueue pop() {
 
 // Функція для знаходження оптимального маршруту
 void optimalRoute(int cities_num, Edge graph[cities_num][cities_num], int start_city, int end_city, char** city_names) {
-    int minTime[MAX_CITIES], minCost[MAX_CITIES], prevCity[MAX_CITIES];
+    float minTime[MAX_CITIES], minCost[MAX_CITIES];
+    int prevCity[MAX_CITIES];
     bool visited[MAX_CITIES];
     for (int i = 0; i < cities_num; ++i) {
-        minTime[i] = INT_MAX;
-        minCost[i] = INT_MAX;
+        minTime[i] = FLT_MAX;
+        minCost[i] = FLT_MAX;
         prevCity[i] = -1; // Ініціалізуємо попереднє місто як -1
         visited[i] = false;
     }
 
-    minTime[start_city] = 0;
-    minCost[start_city] = 0;
+    minTime[start_city] = 0.0;
+    minCost[start_city] = 0.0;
 
     PriorityQueue start;
     start.city = start_city;
@@ -193,9 +216,9 @@ void optimalRoute(int cities_num, Edge graph[cities_num][cities_num], int start_
         visited[u.city] = true;
 
         for (int v = 0; v < cities_num; ++v) {
-            if (graph[u.city][v].time != INT_MAX && graph[u.city][v].cost != INT_MAX && !visited[v]) {
-                int newTime = minTime[u.city] + graph[u.city][v].time;
-                int newCost = minCost[u.city] + graph[u.city][v].cost;
+            if (graph[u.city][v].time != FLT_MAX && graph[u.city][v].cost != FLT_MAX && !visited[v]) {
+                float newTime = minTime[u.city] + graph[u.city][v].time;
+                float newCost = minCost[u.city] + graph[u.city][v].cost;
                 if (newTime < minTime[v] || (newTime == minTime[v] && newCost < minCost[v])) {
                     minTime[v] = newTime;
                     minCost[v] = newCost;
@@ -216,19 +239,19 @@ void optimalRoute(int cities_num, Edge graph[cities_num][cities_num], int start_
     printf("\n| %-17s| %-17s| %-17s| %-17s|\n", "From City", "To City", "Time(Hours)", "Cost(UAH)");
     printf("|___________________________________________________________________________|\n");
     int current_city = end_city;
-    int totalTime = 0;
-    int totalCost = 0;
+    float totalTime = 0.0;
+    float totalCost = 0.0;
     while (current_city != start_city) {
         int prev_city = prevCity[current_city];
         totalTime += graph[prev_city][current_city].time; // Оновлюємо загальний час, додаючи час поточного маршруту
         totalCost += graph[prev_city][current_city].cost; // Оновлюємо загальну вартість, додаючи вартість поточного маршруту
-        printf("| %-17s| %-17s| %-17d| %-17d|\n", city_names[prev_city], city_names[current_city], graph[prev_city][current_city].time, graph[prev_city][current_city].cost);
+        printf("| %-17s| %-17s| %-17.2f| %-17.2f|\n", city_names[prev_city], city_names[current_city], graph[prev_city][current_city].time, graph[prev_city][current_city].cost);
         current_city = prev_city;
     }
     printf("|___________________________________________________________________________|\n");
     printf("|                                  TOTAL:                                   |\n");
     printf("|___________________________________________________________________________|\n");
-    printf("| %-17s| %-17s| %-17d| %-17d|\n", city_names[start_city], city_names[end_city], totalTime, totalCost);
+    printf("| %-17s| %-17s| %-17.2f| %-17.2f|\n", city_names[start_city], city_names[end_city], totalTime, totalCost);
     printf("|___________________________________________________________________________|\n\n");
 }
 
@@ -248,7 +271,7 @@ int main() {
     int choice;
 
     while (true) {
-        check_for_int("1 - Program #1, 2 - Program #2, 0 - EXIT. Enter 1 or 0: ", &choice);
+        check_for_int("1 - Program #1, 2 - Program #2, 0 - EXIT. Enter 1, 2 or 0: ", &choice);
         if (choice == 1) {
             int cities_num;
             while(true){
@@ -271,7 +294,14 @@ int main() {
             char** city_names = (char**)malloc(cities_num * sizeof(char*));
             for (int i = 0; i < cities_num; i++) {
                 city_names[i] = (char*)malloc(MAX_CITY_NAME_LENGTH * sizeof(char));
-                check_for_string("Enter name of city: ", city_names[i]);
+                while (true) {
+                    check_for_string("Enter name of city: ", city_names[i]);
+                    if (find_city_index(city_names, i, city_names[i]) != -1) {
+                        printf("City name already exists. Please enter a different name.\n");
+                        continue;
+                    }
+                    break;
+                }
             }
 
             for (int i = 0; i < cities_num; i++) {
@@ -323,7 +353,14 @@ int main() {
             char** city_names = (char**)malloc(cities_num * sizeof(char*));
             for (int i = 0; i < cities_num; i++) {
                 city_names[i] = (char*)malloc(MAX_CITY_NAME_LENGTH * sizeof(char));
-                check_for_string("Enter name of city: ", city_names[i]);
+                while(true){
+                    check_for_string("Enter name of city: ", city_names[i]);
+                    if (find_city_index(city_names, i, city_names[i]) != -1) {
+                        printf("City name already exists. Please enter a different name.\n");
+                        continue;
+                    }
+                    break;
+                }
             }
             for (int i = 0; i < cities_num; ++i) {
                 for (int j = 0; j < cities_num; ++j) {
@@ -334,7 +371,7 @@ int main() {
                     }
                     while (true) {
                         printf("Enter the time from city %s to city %s. ", city_names[i], city_names[j]);
-                        if (check_for_int("Enter time(in hours): ", &graph[i][j].time) != 0) {
+                        if (check_for_float("Enter time(in hours): ", &graph[i][j].time) != 0) {
                             printf("Incorrect input. Please enter an integer.\n");
                             continue;
                         }
@@ -343,7 +380,7 @@ int main() {
                     
                     while (true) {
                         printf("Enter the cost from city %s to city %s. ", city_names[i], city_names[j]);
-                        if (check_for_int("Enter cost(UAH): ", &graph[i][j].cost) != 0) {
+                        if (check_for_float("Enter cost(UAH): ", &graph[i][j].cost) != 0) {
                             printf("Incorrect input. Please enter an integer.\n");
                             continue;
                         }
@@ -358,7 +395,7 @@ int main() {
             for (int i = 0; i < cities_num; ++i) {
                 for (int j = 0; j < cities_num; ++j) {
                     if (i != j){
-                        printf("| %-17s| %-17s| %-17d| %-17d|\n", city_names[i], city_names[j], graph[i][j].time, graph[i][j].cost);
+                        printf("| %-17s| %-17s| %-17.2f| %-17.2f|\n", city_names[i], city_names[j], graph[i][j].time, graph[i][j].cost);
                     }
                 }
             }
